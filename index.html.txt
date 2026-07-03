@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elite Provably Fair</title>
+
+<style>
+
+body{
+    margin:0;
+    background:#0f172a;
+    color:#fff;
+    font-family:Arial,sans-serif;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.card{
+    width:360px;
+    background:#1e293b;
+    border-radius:12px;
+    padding:25px;
+    box-sizing:border-box;
+}
+
+h2{
+    text-align:center;
+    margin-bottom:25px;
+}
+
+label{
+    display:block;
+    margin-bottom:6px;
+    font-size:14px;
+}
+
+input{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:8px;
+    margin-bottom:18px;
+    box-sizing:border-box;
+    font-size:15px;
+}
+
+button{
+    width:100%;
+    padding:13px;
+    border:none;
+    border-radius:8px;
+    background:#2563eb;
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1d4ed8;
+}
+
+#result{
+    margin-top:25px;
+    text-align:center;
+    font-size:22px;
+    font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+<h2>🔐 Elite Provably Fair</h2>
+
+<label>Server Seed</label>
+<input id="server">
+
+<label>Client Seed</label>
+<input id="client">
+
+<label>Nonce</label>
+<input id="nonce" type="number">
+
+<button onclick="verify()">
+Verify
+</button>
+
+<div id="result"></div>
+
+</div>
+
+<script>
+
+async function verify(){
+
+const server=document.getElementById("server").value.trim();
+
+const client=document.getElementById("client").value.trim();
+
+const nonce=document.getElementById("nonce").value.trim();
+
+if(!server || !client || nonce===""){
+    alert("Fill all fields");
+    return;
+}
+
+const message=client+":"+nonce;
+
+const encoder=new TextEncoder();
+
+const key=await crypto.subtle.importKey(
+"raw",
+encoder.encode(server),
+{
+name:"HMAC",
+hash:"SHA-256"
+},
+false,
+["sign"]
+);
+
+const signature=await crypto.subtle.sign(
+"HMAC",
+key,
+encoder.encode(message)
+);
+
+const bytes=new Uint8Array(signature);
+
+const hex=[...bytes]
+.map(x=>x.toString(16).padStart(2,"0"))
+.join("");
+
+const first13=hex.substring(0,13);
+
+const value=parseInt(first13,16);
+
+const roll=value/Math.pow(2,52);
+
+let multiplier;
+
+if(roll>=0.999999999999){
+
+multiplier=1000;
+
+}else{
+
+multiplier=0.95/(1-roll);
+
+}
+
+if(multiplier>1000){
+
+multiplier=1000;
+
+}
+
+multiplier=multiplier.toFixed(2);
+
+document.getElementById("result").innerHTML=
+"Multiplier: "+multiplier+"x";
+
+}
+
+</script>
+
+</body>
+</html>
